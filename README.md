@@ -1,53 +1,54 @@
 # Portfifine
 
-Ferramentas para migrar recursos compatíveis do Elgato Stream Deck para o
-Fifine Control Deck / StreamDock e manter plugins personalizados juntos em um
-único repositório.
+Tools for migrating compatible Elgato Stream Deck resources to Fifine Control
+Deck / StreamDock, while keeping custom plugins together in one repository.
 
-Autor do projeto: **WendrilXX**.
+Project author: **WendrilXX**.
 
-## Conteúdo
+## Contents
 
-- `StreamDeckPortFifine.bat`: copia plugins e pacotes de ícones compatíveis
-  do Stream Deck, instala os plugins incluídos neste repositório, limpa o
-  cache e reinicia o Fifine.
-- `plugins/com.wendril.spotify.sdPlugin`: plugin Spotify personalizado,
-  pronto para uso no Fifine.
+- `StreamDeckPortFifine.bat`: copies compatible Stream Deck plugins and icon
+  packs, installs the plugins bundled in this repository, clears the cache,
+  and restarts Fifine.
+- `plugins/com.wendril.spotify.sdPlugin`: custom Spotify plugin, ready to use
+  with Fifine.
 
-## Uso
+## Usage
 
-1. Baixe ou clone este repositório.
-2. Feche o Fifine Control Deck, se estiver aberto.
-3. Execute `StreamDeckPortFifine.bat` como administrador.
-4. Abra o Fifine e procure as ações na categoria correspondente.
+1. Download or clone this repository.
+2. Close Fifine Control Deck if it is open.
+3. Run `StreamDeckPortFifine.bat` as administrator.
+4. Open Fifine and find the actions in their corresponding category.
 
-O script procura instalações padrão em `%APPDATA%\HotSpot\StreamDock` e, se
-existirem, copia plugins e icon packs de `%APPDATA%\Elgato\StreamDeck`.
+The script looks for the standard installation at
+`%APPDATA%\HotSpot\StreamDock` and, when present, copies plugins and icon
+packs from `%APPDATA%\Elgato\StreamDeck`.
 
-## Plugin Spotify
+## Spotify Plugin
 
-O plugin em `plugins/com.wendril.spotify.sdPlugin` é autocontido: suas
-dependências, incluindo a DLL necessária, estão incluídas em
-`plugin/node_modules`. Não apague essa pasta.
+The plugin in `plugins/com.wendril.spotify.sdPlugin` is self-contained: its
+dependencies, including the required DLL, are bundled in `plugin/node_modules`.
+Do not delete that folder.
 
-Recursos:
+Features:
 
 - Play / Pause;
-- próxima e faixa anterior;
-- volume do aplicativo Spotify em passos de 5%;
-- Now Playing com artista, título e capa do álbum, atualizado automaticamente enquanto estiver visível.
+- next and previous track;
+- Spotify application volume in 5% increments;
+- Now Playing with artist, title, and album artwork, refreshed automatically
+  while visible.
 
-Ele controla o aplicativo Spotify para Windows localmente através de Windows
-SMTC e Core Audio. Não usa OAuth, API Web ou Spotify Premium. O Spotify deve
-estar aberto para que as ações funcionem.
+It controls the local Spotify for Windows application through Windows SMTC and
+Core Audio. It does not use OAuth, the Web API, or Spotify Premium. Spotify
+must be open for the actions to work.
 
-## Compatibilidade
+## Compatibility
 
-- Windows 10 ou superior, x64;
-- Fifine Control Deck / StreamDock com Node.js 20 embutido;
-- Spotify para Windows.
+- Windows 10 or later, x64;
+- Fifine Control Deck / StreamDock with bundled Node.js 20;
+- Spotify for Windows.
 
-Plugins oficiais recentes do Elgato que tenham `manifest.json` criptografado
-não são compatíveis com o Fifine e não podem ser migrados simplesmente por
-cópia. O plugin Spotify deste repositório foi construído especificamente para
-o formato de plugins do Fifine/Mirabox.
+Recent official Elgato plugins whose `manifest.json` is encrypted are not
+compatible with Fifine and cannot be migrated by simply copying them. The
+Spotify plugin in this repository was built specifically for the
+Fifine/Mirabox plugin format.
