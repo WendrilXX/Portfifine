@@ -46,13 +46,12 @@ class Plugins {
   _handle(data) {
     const action = data.action ? data.action.split(".").pop() : null;
     const map = this.actions || {};
-    if (
-      action &&
-      map[action] &&
-      typeof map[action][data.event] === "function"
-    ) {
+    const handler = action && map[action];
+    const method =
+      handler && (handler[data.event] || handler[`_${data.event}`]);
+    if (typeof method === "function") {
       try {
-        map[action][data.event](data);
+        method.call(handler, data);
       } catch (e) {
         console.error("[spotify] action error", action, data.event, e);
       }
