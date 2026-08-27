@@ -35,7 +35,7 @@ Recursos:
 - Play / Pause;
 - próxima e faixa anterior;
 - volume do aplicativo Spotify em passos de 5%;
-- Now Playing com artista, título e capa do álbum.
+- Now Playing com artista, título e capa do álbum, atualizado automaticamente enquanto estiver visível.
 
 Ele controla o aplicativo Spotify para Windows localmente através de Windows
 SMTC e Core Audio. Não usa OAuth, API Web ou Spotify Premium. O Spotify deve

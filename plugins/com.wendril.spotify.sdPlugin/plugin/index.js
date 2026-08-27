@@ -10,6 +10,8 @@ const actions = new Actions(plugin);
 let client = null;
 const playpauseContexts = new Set();
 const nowplayingContexts = new Set();
+const nowplayingVisuals = new Map();
+let nowplayingTimer = null;
 
 function ensureClient() {
   if (client) return client;
@@ -41,7 +43,29 @@ function refresh(state) {
   nowplayingContexts.forEach((ctx) => updateNowPlaying(ctx, state));
 }
 
-function updateNowPlaying(ctx, state) {
+function nowPlayingSignature(state) {
+  const art = state.albumArt;
+  const artKey =
+    art && art.length
+      ? `${art.length}:${art.subarray(0, 16).toString("base64")}:${art
+          .subarray(-16)
+          .toString("base64")}`
+      : "";
+
+  return [
+    state.artist || "",
+    state.title || "",
+    state.album || "",
+    state.durationMs || 0,
+    artKey,
+  ].join("\u0000");
+}
+
+function updateNowPlaying(ctx, state, force = false) {
+  const signature = nowPlayingSignature(state);
+  if (!force && nowplayingVisuals.get(ctx) === signature) return;
+
+  nowplayingVisuals.set(ctx, signature);
   const artist = state.artist || "";
   const title = state.title || "";
   const line =
@@ -51,6 +75,35 @@ function updateNowPlaying(ctx, state) {
     const uri = "data:image/jpeg;base64," + state.albumArt.toString("base64");
     plugin.setImage(ctx, uri);
   }
+}
+
+function refreshNowPlaying() {
+  if (!nowplayingContexts.size) return;
+
+  const c = ensureClient();
+  const state = c.latestState ? c.latestState() : null;
+  if (!state) return;
+
+  nowplayingContexts.forEach((ctx) => updateNowPlaying(ctx, state));
+}
+
+function startNowPlayingRefresh() {
+  if (nowplayingTimer || !nowplayingContexts.size) return;
+
+  const poll = () => {
+    nowplayingTimer = null;
+    if (!nowplayingContexts.size) return;
+
+    refreshNowPlaying();
+    nowplayingTimer = setTimeout(poll, 1000);
+  };
+
+  poll();
+}
+
+function stopNowPlayingRefresh() {
+  if (nowplayingTimer) clearTimeout(nowplayingTimer);
+  nowplayingTimer = null;
 }
 
 function guardRunning(c) {
@@ -177,21 +230,20 @@ actions.nowplaying = {
   _willAppear(data) {
     const ctx = data.context;
     nowplayingContexts.add(ctx);
+    nowplayingVisuals.delete(ctx);
     const c = ensureClient();
     const st = c.latestState ? c.latestState() : null;
-    if (st) updateNowPlaying(ctx, st);
+    if (st) updateNowPlaying(ctx, st, true);
+    startNowPlayingRefresh();
   },
   _willDisappear(data) {
     nowplayingContexts.delete(data.context);
+    nowplayingVisuals.delete(data.context);
+    if (!nowplayingContexts.size) stopNowPlayingRefresh();
   },
   keyDown(data) {
-    const c = ensureClient();
-    if (!guardRunning(c)) {
-      plugin.showAlert(data.context);
-      return;
-    }
-    const st = c.latestState ? c.latestState() : null;
-    if (st) updateNowPlaying(data.context, st);
+    // This is a display action; a press just requests an immediate refresh.
+    refreshNowPlaying();
   },
 };
 
