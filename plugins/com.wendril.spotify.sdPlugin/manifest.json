@@ -43,6 +43,11 @@
       "UUID": "com.wendril.spotify.next",
       "Name": "Próxima",
       "Icon": "static/next",
+      "States": [
+        {
+          "Image": "static/next"
+        }
+      ],
       "Controllers": ["Keypad"],
       "Tooltip": "Próxima faixa"
     },
@@ -50,6 +55,11 @@
       "UUID": "com.wendril.spotify.previous",
       "Name": "Anterior",
       "Icon": "static/previous",
+      "States": [
+        {
+          "Image": "static/previous"
+        }
+      ],
       "Controllers": ["Keypad"],
       "Tooltip": "Faixa anterior"
     },
@@ -57,6 +67,11 @@
       "UUID": "com.wendril.spotify.volup",
       "Name": "Volume +",
       "Icon": "static/volup",
+      "States": [
+        {
+          "Image": "static/volup"
+        }
+      ],
       "Controllers": ["Keypad"],
       "Tooltip": "Aumenta o volume do app Spotify"
     },
@@ -64,6 +79,11 @@
       "UUID": "com.wendril.spotify.voldown",
       "Name": "Volume -",
       "Icon": "static/voldown",
+      "States": [
+        {
+          "Image": "static/voldown"
+        }
+      ],
       "Controllers": ["Keypad"],
       "Tooltip": "Diminui o volume do app Spotify"
     },
@@ -71,6 +91,11 @@
       "UUID": "com.wendril.spotify.nowplaying",
       "Name": "Now Playing",
       "Icon": "static/nowplaying",
+      "States": [
+        {
+          "Image": "static/nowplaying"
+        }
+      ],
       "Controllers": ["Keypad"],
       "Tooltip": "Mostra artista/título e capa do álbum"
     }
