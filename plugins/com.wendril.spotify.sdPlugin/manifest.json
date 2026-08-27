@@ -1,6 +1,6 @@
 {
   "SDKVersion": 1,
-  "Name": "Spotify (WendrilXX)",
+  "Name": "Spotify",
   "Version": "1.0.0",
   "Author": "WendrilXX",
   "Description": "Controle offline do Spotify via Windows SMTC (sem Premium/OAuth). Play/Pause, Next, Previous, Volume e Now Playing com capa do álbum.",
