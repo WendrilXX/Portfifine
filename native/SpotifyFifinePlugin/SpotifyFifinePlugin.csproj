@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Function-pointer address-of (&StaticMethod) for the native callback. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>SpotifyFifinePlugin</AssemblyName>
+    <RootNamespace>SpotifyFifinePlugin</RootNamespace>
+
+    <!-- NativeAOT configuration. Triggered on `dotnet publish` only. -->
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>true</StripSymbols>
+
+    <!-- Source-generator friendly: no runtime reflection in JSON paths. -->
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- libspotifyctl.dll is a prebuilt Windows x64 native asset (never a Node
+         package). It is copied beside the built/published exe so the C ABI
+         P/Invoke resolves by name at runtime. -->
+    <Content Include="..\libspotifyctl\libspotifyctl.dll" Link="libspotifyctl.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\libspotifyctl\LICENSE" Link="LICENSE-libspotifyctl.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The deterministic harness references this assembly's internal types to
+         exercise production behaviour with injected fakes. -->
+    <InternalsVisibleTo Include="Harness" />
+  </ItemGroup>
+
+</Project>

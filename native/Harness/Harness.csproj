@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Harness</AssemblyName>
+    <RootNamespace>FifineProtoHarness</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reference the production plugin assembly so the harness can exercise the
+         real PluginCore / JSON serialization through injected fakes. -->
+    <ProjectReference Include="..\SpotifyFifinePlugin\SpotifyFifinePlugin.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Carried only so the best-effort direct DLL smoke test can load it. This
+         is NOT a Node/koffi package, just the prebuilt native asset. -->
+    <Content Include="..\libspotifyctl\libspotifyctl.dll" Link="libspotifyctl.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

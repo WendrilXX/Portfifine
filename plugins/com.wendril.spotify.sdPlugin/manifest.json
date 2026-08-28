@@ -1,18 +1,14 @@
 {
   "SDKVersion": 1,
   "Name": "Spotify",
-  "Version": "1.1.2",
+  "Version": "2.0.0",
   "Author": "WendrilXX",
   "Description": "Controle offline do Spotify via Windows SMTC (sem Premium/OAuth). Abrir Spotify, Play/Pause, Next, Previous, Volume e Now Playing com capa do álbum.",
   "Icon": "static/spotify",
   "Category": "Spotify",
   "CategoryIcon": "static/spotify",
-  "CodePath": "plugin/index.js",
-  "CodePathWin": "plugin/index.js",
-  "CodePathMac": "plugin/index.js",
-  "Nodejs": {
-    "Version": "20"
-  },
+  "CodePath": "plugin/SpotifyFifinePlugin.exe",
+  "CodePathWin": "plugin/SpotifyFifinePlugin.exe",
   "Software": {
     "MinimumVersion": "3.10.188.226"
   },

@@ -3,5 +3,9 @@
 Thumbs.db
 Desktop.ini
 
-# The Spotify plugin is intentionally self-contained; keep its bundled
-# plugin/node_modules directory tracked so Fifine can load it directly.
+# Native source build artifacts
+**/bin/
+**/obj/
+
+# Local Deepwork state
+.slim/deepwork/
