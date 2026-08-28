@@ -1,19 +1,21 @@
 # Portfifine
 
-**Bring compatible Stream Deck resources to Fifine Control Deck — and keep a local Spotify controller ready to install.**
+**Migrate compatible Stream Deck resources to Fifine Control Deck and install a local native Spotify controller.**
 
 Portfifine is a Windows utility for Fifine Control Deck / StreamDock. It can
 migrate compatible Elgato plugins and icon packs, install the bundled Spotify
-plugin, clear the Fifine cache, and restart the application in one run.
+plugin, clear the Fifine cache, and restart the application in one run. The
+Spotify plugin is a Windows x64 C# .NET 8 NativeAOT executable.
 
 > **Author:** [WendrilXX](https://github.com/WendrilXX)
 
 ## What is included
 
-| Component                                                                        | Purpose                                        |
-| -------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Self-elevating migration and installer script. |
-| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.  |
+| Component                                                                        | Purpose                                            |
+| -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Self-elevating migration and installer script.     |
+| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.      |
+| [`native`](./native)                                                             | Open C# source and deterministic protocol harness. |
 
 ## Quick start
 
@@ -41,7 +43,8 @@ The installer checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock`, then:
 
 The bundled plugin controls the local Spotify for Windows desktop app through
 Windows SMTC and Core Audio. It is fully local: **no OAuth, Web API, Spotify
-Premium, account credentials, or API keys are required.**
+Premium, account credentials, or API keys are required.** It runs as
+`SpotifyFifinePlugin.exe` and does not require Node.js.
 
 ### Actions
 
@@ -51,7 +54,7 @@ Premium, account credentials, or API keys are required.**
 | **Play / Pause** | Toggles playback.                       | Spotify must be running.                                            |
 | **Next**         | Skips to the next track.                | Depends on the current Spotify queue.                               |
 | **Previous**     | Returns to the previous track.          | Depends on the current Spotify queue.                               |
-| **Volume +**     | Raises Spotify's app volume by 5%.      | A track must be playing so Windows exposes Spotify's audio session. |
+| **Volume +**     | Raises Spotify's app volume by 5%.      | Adjusts Spotify's Windows Mixer session, not its in-app slider.     |
 | **Volume −**     | Lowers Spotify's app volume by 5%.      | A track must be playing so Windows exposes Spotify's audio session. |
 | **Now Playing**  | Shows artist, title, and album artwork. | Refreshes automatically while the key is visible.                   |
 
@@ -72,8 +75,8 @@ to:
 ```
 
 Then fully close and reopen Fifine Control Deck. Keep
-`plugin/node_modules` intact: it includes the required Windows native runtime
-and `libspotifyctl.dll`.
+`SpotifyFifinePlugin.exe`, `libspotifyctl.dll`, and
+`LICENSE-libspotifyctl.txt` together inside its `plugin` folder.
 
 ## Requirements
 
@@ -81,6 +84,9 @@ and `libspotifyctl.dll`.
 - Fifine Control Deck / StreamDock `3.10.188.226` or later;
 - Spotify for Windows for the Spotify actions;
 - Administrator permission when running the migration script.
+
+Developers additionally need the .NET 8 SDK and Visual Studio 2022 Build Tools
+with the C++ desktop workload to publish NativeAOT binaries.
 
 ## Compatibility and limitations
 
@@ -99,9 +105,10 @@ and `libspotifyctl.dll`.
 
 ### Spotify actions appear but do nothing
 
-- Use plugin version **1.1.1** or newer (shown in `manifest.json`).
+- Use plugin version **2.0.1** or newer (shown in `manifest.json`).
 - Start Spotify for Windows before using playback controls.
 - For **Volume +** and **Volume −**, start playback first; a paused app may not have an active Core Audio session.
+- Volume actions change Spotify's Windows Mixer volume, not the in-app Spotify slider or Windows master volume.
 - Remove and add the action again in Fifine if it was placed before an update.
 
 ### Now Playing has no track details or album art
@@ -114,14 +121,23 @@ own while it remains visible.
 ```text
 Portfifine/
 ├── StreamDeckPortFifine.bat
+├── native/                         # C# NativeAOT source and harness
 └── plugins/
     └── com.wendril.spotify.sdPlugin/
         ├── manifest.json
-        ├── plugin/
-        │   ├── index.js
-        │   └── node_modules/
-        └── static/
+        ├── plugin/                 # .exe, libspotifyctl.dll, license
+        └── static/                 # action icons
 ```
+
+## Open source
+
+The full plugin source is included in this repository under
+[`native/SpotifyFifinePlugin`](./native/SpotifyFifinePlugin). The dependency-free
+test harness in [`native/Harness`](./native/Harness) verifies the Fifine
+WebSocket registration and action behavior without requiring physical hardware.
+
+Build, publish, and test commands are documented in
+[`native/README.md`](./native/README.md).
 
 ## Updating
 

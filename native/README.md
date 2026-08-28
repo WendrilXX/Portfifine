@@ -1,13 +1,9 @@
-# Portfifine — native Fifine plugin
+# Native Spotify plugin development
 
-> **Phase 2: feature parity (NOT yet active).** This C# / .NET 8 NativeAOT
-> scaffold now implements all seven actions, the `libspotifyctl.dll` C ABI
-> wrapper, lifecycle dispatch, and Now Playing — with the **exact same Fifine
-> protocol and outbound JSON shapes** as the production Node plugin. It remains
-> isolated under `native/`; the active `plugins/com.wendril.spotify.sdPlugin`
-> Node plugin, the manifest, the installed Fifine copy, and all assets are
-> **untouched**. Switching the manifest entry point to this executable is a
-> **Phase 3** task and has **not** been done.
+This directory contains the active Fifine Spotify plugin source. The released
+package runs `SpotifyFifinePlugin.exe`, a Windows x64 C# .NET 8 NativeAOT
+executable that uses Fifine's local WebSocket protocol and
+`libspotifyctl.dll` for local Spotify control.
 
 ## Layout
 
@@ -15,7 +11,7 @@
 native/
 ├── libspotifyctl/
 │   └── libspotifyctl.dll          # prebuilt Windows x64 native asset (NO Node/koffi)
-├── SpotifyFifinePlugin/          # Phase 2 feature-parity executable (net8.0, win-x64 NativeAOT)
+├── SpotifyFifinePlugin/          # net8.0, win-x64 NativeAOT executable
 │   ├── SpotifyFifinePlugin.csproj # NativeAOT + DLL copy-to-output/publish + InternalsVisibleTo
 │   ├── Program.cs                 # launch + WebSocket connect/register + native state consumer loop
 │   ├── ArgsParser.cs              # -port/-pluginUUID/-registerEvent/-info (named + positional)
@@ -36,6 +32,12 @@ native/
 ```
 
 No external NuGet packages are used. All JSON is `System.Text.Json` source-generated.
+
+## Prerequisites
+
+- .NET SDK 8;
+- Visual Studio 2022 Build Tools with the C++ desktop workload;
+- Windows x64.
 
 ## Build
 
@@ -83,7 +85,7 @@ The harness validates:
 
 A non-zero exit code means a contract/behaviour assertion failed.
 
-## ABI notes (validated as far as local tooling allows)
+## Native interop notes
 
 - **Exports** confirmed with `dumpbin /exports`: `spotifyctl_new`, `free`,
   `start`, `stop`, `is_running`, `play`, `pause`, `next`, `previous`, `open_uri`,
@@ -106,7 +108,7 @@ duration_ms@40, album_art@48, album_art_len@56, can_seek@64 … app_volume@88`.
   bounded `Channel<PlaybackState>` (never writes the socket directly). All retained
   tokens are `disconnect`-ed **before** the native handle is `free`-d.
 
-### ABI items to escalate to Oracle (if the C header disagrees)
+### Validation limits
 
 - If the DLL was compiled with non-default `#pragma pack` the sequential offsets
   above may not match; the C header should be compared to the computed layout.
@@ -124,8 +126,9 @@ duration_ms@40, album_art@48, album_art_len@56, can_seek@64 … app_volume@88`.
   deduplicates via an artist/title/album/duration/art head-tail signature.
 - Exits cleanly (`0`) when the host closes the connection.
 
-## Non-goal (explicit)
+## Active package
 
-This Phase 2 scaffold is **not active**. The Fifine manifest still points at the
-Node plugin. No Phase 3 manifest switch, packaging, install, or benchmark has been
-performed. Marketplace/SC6 publication remains out of scope per the migration plan.
+The published plugin under `plugins/com.wendril.spotify.sdPlugin/plugin/`
+contains `SpotifyFifinePlugin.exe`, `libspotifyctl.dll`, and
+`LICENSE-libspotifyctl.txt`. The manifest points to the native executable; the
+previous Node runtime is no longer packaged or used.
