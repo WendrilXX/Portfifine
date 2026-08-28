@@ -115,7 +115,7 @@ function guardRunning(c) {
 
 // ---- Actions ----
 actions.open = {
-  keyDown() {
+  keyUp() {
     plugin.openUrl("spotify:");
   },
 };
@@ -131,7 +131,7 @@ actions.playpause = {
   _willDisappear(data) {
     playpauseContexts.delete(data.context);
   },
-  keyDown(data) {
+  keyUp(data) {
     const c = ensureClient();
     if (!guardRunning(c)) {
       plugin.showAlert(data.context);
@@ -154,7 +154,7 @@ actions.next = {
   _willAppear(data) {
     ensureClient();
   },
-  keyDown(data) {
+  keyUp(data) {
     const c = ensureClient();
     if (!guardRunning(c)) {
       plugin.showAlert(data.context);
@@ -173,7 +173,7 @@ actions.previous = {
   _willAppear(data) {
     ensureClient();
   },
-  keyDown(data) {
+  keyUp(data) {
     const c = ensureClient();
     if (!guardRunning(c)) {
       plugin.showAlert(data.context);
@@ -192,7 +192,7 @@ actions.volup = {
   _willAppear(data) {
     ensureClient();
   },
-  keyDown(data) {
+  keyUp(data) {
     const c = ensureClient();
     if (!guardRunning(c)) {
       plugin.showAlert(data.context);
@@ -214,7 +214,7 @@ actions.voldown = {
   _willAppear(data) {
     ensureClient();
   },
-  keyDown(data) {
+  keyUp(data) {
     const c = ensureClient();
     if (!guardRunning(c)) {
       plugin.showAlert(data.context);
@@ -247,7 +247,7 @@ actions.nowplaying = {
     nowplayingVisuals.delete(data.context);
     if (!nowplayingContexts.size) stopNowPlayingRefresh();
   },
-  keyDown(data) {
+  keyUp(data) {
     // This is a display action; a press just requests an immediate refresh.
     refreshNowPlaying();
   },
