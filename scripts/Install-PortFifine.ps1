@@ -18,7 +18,14 @@ param(
     [switch]$BundledOnly,
     [switch]$NoDesktopIconPacks,
     [switch]$SelfTest,
-    [switch]$NoPause
+    [switch]$NoPause,
+    [Alias('Manual')]
+    [switch]$Help,
+    [Alias('ScanResources')]
+    [switch]$Scan,
+    [switch]$Diagnose,
+    [switch]$Services,
+    [switch]$Inspect
 )
 
 Set-StrictMode -Version Latest
@@ -27,18 +34,30 @@ $ErrorActionPreference = 'Stop'
 $failed = $false
 $restarted = $false
 
-function Test-ManifestValid {
+function Get-ManifestStatus {
     param([string]$Path)
     try {
-        if (-not (Test-Path -LiteralPath $Path)) { return $false }
+        if (-not (Test-Path -LiteralPath $Path)) {
+            return [PSCustomObject]@{ Valid = $false; Reason = 'manifest.json ausente' }
+        }
         $raw = [System.IO.File]::ReadAllText($Path)
         $trimmed = $raw.TrimStart()
-        if ($trimmed.Length -eq 0 -or -not $trimmed.StartsWith('{')) { return $false }
+        if ($trimmed.Length -eq 0) {
+            return [PSCustomObject]@{ Valid = $false; Reason = 'manifest.json vazio' }
+        }
+        if (-not $trimmed.StartsWith('{')) {
+            return [PSCustomObject]@{ Valid = $false; Reason = 'manifesto nao esta em JSON aberto (possivel criptografia)' }
+        }
         $null = $raw | ConvertFrom-Json -ErrorAction Stop
-        return $true
+        return [PSCustomObject]@{ Valid = $true; Reason = 'manifest JSON valido' }
     } catch {
-        return $false
+        return [PSCustomObject]@{ Valid = $false; Reason = 'manifest JSON invalido' }
     }
+}
+
+function Test-ManifestValid {
+    param([string]$Path)
+    return (Get-ManifestStatus -Path $Path).Valid
 }
 
 function Format-RoboPath {
@@ -58,6 +77,170 @@ function Invoke-RoboCopy {
     $proc = Start-Process -FilePath 'robocopy.exe' -ArgumentList $argList -NoNewWindow -Wait -PassThru
     $code = $proc.ExitCode
     return [PSCustomObject]@{ ExitCode = $code; Success = ($code -ge 0 -and $code -le 7) }
+}
+
+function Write-Header {
+    param([string]$Title = 'Portfifine - Instalador para Fifine Control Deck')
+    Write-Host '--------------------------------------------------' -ForegroundColor DarkGray
+    Write-Host " $Title" -ForegroundColor Cyan
+    Write-Host '--------------------------------------------------' -ForegroundColor DarkGray
+}
+
+function Find-FifineExecutable {
+    $process = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -eq 'fifine Control Deck' } | Select-Object -First 1
+    if ($process) {
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($process.MainModule.FileName)) {
+                return $process.MainModule.FileName
+            }
+        } catch { }
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($process.Path)) {
+                return $process.Path
+            }
+        } catch { }
+    }
+
+    $candidates = @(
+        (Join-Path ${env:ProgramFiles(x86)} 'fifine Control Deck\fifine Control Deck.exe'),
+        (Join-Path $env:ProgramFiles 'fifine Control Deck\fifine Control Deck.exe')
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+    }
+    return $null
+}
+
+function Write-Manual {
+    Write-Header -Title 'Portfifine - Manual rapido'
+    Write-Host ' Uso:'
+    Write-Host '   StreamDeckPortFifine.bat' -ForegroundColor Green
+    Write-Host ''
+    Write-Host ' Instalacao:'
+    Write-Host '   -BundledOnly        Instala somente os recursos deste repositorio.'
+    Write-Host '   -NoRestart          Nao reinicia o Fifine ao finalizar.'
+    Write-Host '   -NoDesktopIconPacks Nao procura .streamDeckIconPack na Area de Trabalho.'
+    Write-Host '   -NoPause            Nao pausa a janela ao finalizar (automacao).'
+    Write-Host ''
+    Write-Host ' Consulta somente leitura (nao altera arquivos nem reinicia o Fifine):'
+    Write-Host '   -Diagnose  Verifica instalacoes, pastas e executavel do Fifine.'
+    Write-Host '   -Scan      Lista plugins e pacotes de icones encontrados.'
+    Write-Host '   -Services  Lista processos e servicos relacionados.'
+    Write-Host '   -Inspect   Executa Diagnose + Scan + Services.' -ForegroundColor Green
+    Write-Host ''
+    Write-Host ' Exemplos:'
+    Write-Host '   StreamDeckPortFifine.bat -Inspect'
+    Write-Host '   StreamDeckPortFifine.bat -BundledOnly -NoRestart'
+    Write-Host '   StreamDeckPortFifine.bat -Help'
+}
+
+function Write-Diagnosis {
+    param([string]$RepoRoot)
+    Write-Host ''
+    Write-Host '[DIAGNOSTICO] Instalacoes e caminhos'
+    $fifineRoot = Join-Path $env:APPDATA 'HotSpot\StreamDock'
+    if (Test-Path -LiteralPath $fifineRoot) {
+        $installedPlugins = @(Get-ChildItem -LiteralPath (Join-Path $fifineRoot 'plugins') -Directory -Filter '*.sdPlugin' -ErrorAction SilentlyContinue)
+        $profiles = @(Get-ChildItem -LiteralPath (Join-Path $fifineRoot 'profiles') -Directory -ErrorAction SilentlyContinue)
+        Write-Host "  OK: dados do Fifine encontrados em $fifineRoot" -ForegroundColor Green
+        Write-Host "  INFO: plugins instalados: $($installedPlugins.Count); perfis locais: $($profiles.Count)" -ForegroundColor DarkGray
+    } else {
+        Write-Host "  AVISO: dados do Fifine nao encontrados em $fifineRoot" -ForegroundColor Yellow
+    }
+
+    $exePath = Find-FifineExecutable
+    if ($exePath) {
+        Write-Host "  OK: executavel do Fifine: $exePath" -ForegroundColor Green
+    } else {
+        Write-Host '  AVISO: executavel do Fifine nao localizado nos caminhos conhecidos.' -ForegroundColor Yellow
+    }
+
+    $elgatoRoot = Join-Path $env:APPDATA 'Elgato\StreamDeck'
+    if (Test-Path -LiteralPath $elgatoRoot) {
+        Write-Host "  OK: dados do Elgato encontrados em $elgatoRoot" -ForegroundColor Green
+    } else {
+        Write-Host '  INFO: dados do Elgato nao encontrados; a migracao sera ignorada.' -ForegroundColor DarkGray
+    }
+
+    if (Test-Path -LiteralPath $RepoRoot) {
+        Write-Host "  OK: repositorio encontrado em $RepoRoot" -ForegroundColor Green
+    } else {
+        Write-Host "  AVISO: repositorio nao encontrado em $RepoRoot" -ForegroundColor Yellow
+    }
+}
+
+function Write-ResourceScan {
+    param([string]$RepoRoot)
+    Write-Host ''
+    Write-Host '[VARREDURA] Recursos compativeis'
+
+    $elgatoPlugins = Join-Path $env:APPDATA 'Elgato\StreamDeck\Plugins'
+    if (Test-Path -LiteralPath $elgatoPlugins) {
+        $plugins = @(Get-ChildItem -LiteralPath $elgatoPlugins -Directory -Filter '*.sdPlugin' -ErrorAction SilentlyContinue)
+        Write-Host "  Elgato plugins: $($plugins.Count) encontrado(s)." -ForegroundColor DarkGray
+        foreach ($plugin in $plugins) {
+            $status = Get-ManifestStatus -Path (Join-Path $plugin.FullName 'manifest.json')
+            if ($status.Valid) {
+                Write-Host "    OK: $($plugin.Name)" -ForegroundColor Green
+            } else {
+                Write-Host "    AVISO: $($plugin.Name) - $($status.Reason)." -ForegroundColor Yellow
+            }
+        }
+    } else {
+        Write-Host '  INFO: pasta de plugins Elgato nao encontrada.' -ForegroundColor DarkGray
+    }
+
+    $bundledRoot = Join-Path $RepoRoot 'plugins'
+    if (Test-Path -LiteralPath $bundledRoot) {
+        $bundled = @(Get-ChildItem -LiteralPath $bundledRoot -Directory -Filter '*.sdPlugin' -ErrorAction SilentlyContinue)
+        Write-Host "  Plugins incluidos: $($bundled.Count) encontrado(s)." -ForegroundColor DarkGray
+        foreach ($plugin in $bundled) {
+            $status = Get-ManifestStatus -Path (Join-Path $plugin.FullName 'manifest.json')
+            if ($status.Valid) {
+                Write-Host "    OK: $($plugin.Name)" -ForegroundColor Green
+            } else {
+                Write-Host "    AVISO: $($plugin.Name) - $($status.Reason)." -ForegroundColor Yellow
+            }
+        }
+    } else {
+        Write-Host '  INFO: pasta plugins do repositorio nao encontrada.' -ForegroundColor DarkGray
+    }
+
+    $paths = @($RepoRoot, [Environment]::GetFolderPath('Desktop')) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path -LiteralPath $_) }
+    $packs = @($paths | ForEach-Object { Get-ChildItem -LiteralPath $_ -Filter '*.streamDeckIconPack' -File -ErrorAction SilentlyContinue })
+    if ($packs.Count -eq 0) {
+        Write-Host '  INFO: nenhum .streamDeckIconPack encontrado no repositorio ou Area de Trabalho.' -ForegroundColor DarkGray
+    } else {
+        Write-Host "  Icon packs: $($packs.Count) encontrado(s)." -ForegroundColor DarkGray
+        foreach ($pack in $packs) { Write-Host "    OK: $($pack.FullName)" -ForegroundColor Green }
+    }
+}
+
+function Write-ServiceStatus {
+    Write-Host ''
+    Write-Host '[SERVICOS] Processos e servicos relacionados'
+    $pattern = 'fifine|streamdock|stream deck|elgato'
+    try {
+        $services = @(Get-Service -ErrorAction Stop | Where-Object { $_.Name -match $pattern -or $_.DisplayName -match $pattern })
+        if ($services.Count -eq 0) {
+            Write-Host '  INFO: nenhum servico Windows relacionado encontrado (normal para o Fifine).' -ForegroundColor DarkGray
+        } else {
+            foreach ($service in $services) {
+                Write-Host "  OK: servico $($service.DisplayName) - $($service.Status)" -ForegroundColor Green
+            }
+        }
+    } catch {
+        Write-Host "  AVISO: nao foi possivel consultar servicos Windows: $_" -ForegroundColor Yellow
+    }
+
+    $processes = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match 'fifine|hotspot|streamdock|streamdeck|elgato' })
+    if ($processes.Count -eq 0) {
+        Write-Host '  INFO: nenhum processo relacionado esta em execucao.' -ForegroundColor DarkGray
+    } else {
+        foreach ($process in $processes) {
+            Write-Host "  OK: processo $($process.ProcessName) (PID $($process.Id))" -ForegroundColor Green
+        }
+    }
 }
 
 if ($SelfTest) {
@@ -91,9 +274,24 @@ if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
 }
 $RepositoryRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($RepositoryRoot)
 
-Write-Host '--------------------------------------------------' -ForegroundColor DarkGray
-Write-Host ' Portfifine - Instalador para Fifine Control Deck' -ForegroundColor Cyan
-Write-Host '--------------------------------------------------' -ForegroundColor DarkGray
+if ($Help) {
+    Write-Manual
+    exit 0
+}
+
+if ($Inspect -or $Diagnose -or $Scan -or $Services) {
+    Write-Header -Title 'Portfifine - Consulta do ambiente'
+    Write-Host " Repositorio : $RepositoryRoot" -ForegroundColor DarkGray
+    Write-Host ' Modo        : somente leitura (nenhum arquivo sera alterado)' -ForegroundColor DarkGray
+    if ($Inspect -or $Diagnose) { Write-Diagnosis -RepoRoot $RepositoryRoot }
+    if ($Inspect -or $Scan) { Write-ResourceScan -RepoRoot $RepositoryRoot }
+    if ($Inspect -or $Services) { Write-ServiceStatus }
+    Write-Host ''
+    Write-Host ' Resultado: consulta concluida.' -ForegroundColor Green
+    exit 0
+}
+
+Write-Header
 Write-Host " Repositorio : $RepositoryRoot" -ForegroundColor DarkGray
 Write-Host " Opcoes      : BundledOnly=$BundledOnly NoRestart=$NoRestart NoDesktopIconPacks=$NoDesktopIconPacks" -ForegroundColor DarkGray
 

@@ -30,6 +30,7 @@ Optional flags can be passed to the launcher, for example:
 
 ```text
 StreamDeckPortFifine.bat -BundledOnly -NoRestart
+StreamDeckPortFifine.bat -Inspect
 ```
 
 See [Command-line options](#command-line-options) for details. The installer is safe to run again whenever this repository receives an update.
@@ -56,10 +57,15 @@ The installer accepts the following switches (passed through the launcher):
 | `-NoRestart`          | Do not restart Fifine Control Deck after installing.                                                                        |
 | `-NoDesktopIconPacks` | Do not scan the Desktop for `.streamDeckIconPack` files.                                                                    |
 | `-NoPause`            | Do not pause at the end. Interactive runs keep the result visible until a key is pressed; use `-NoPause` for automation/CI. |
+| `-Help`               | Show the built-in Portuguese quick manual.                                                                                  |
+| `-Diagnose`           | Read-only check of Fifine/Elgato paths, installed plugin/profile counts, and the Fifine executable.                         |
+| `-Scan`               | Read-only list of compatible Elgato plugins, bundled plugins, and available icon packs.                                     |
+| `-Services`           | Read-only list of related Windows services and running processes.                                                           |
+| `-Inspect`            | Run `-Diagnose`, `-Scan`, and `-Services` together (recommended first troubleshooting step).                                |
 
 When launched interactively (double-click), the launcher keeps the result visible until a key is pressed. The PowerShell installer also accepts `-NoPause` (no effect on install logic) so the flag can be forwarded safely through the launcher for automation.
 
-The launcher also forwards any other arguments to the PowerShell installer. No elevated/administrator context is required.
+The diagnostic options are **read-only**: they do not install, copy, delete, clear caches, alter profiles, or restart Fifine. The launcher also forwards any other arguments to the PowerShell installer. No elevated/administrator context is required.
 
 ## Spotify plugin
 
@@ -119,6 +125,16 @@ with the C++ desktop workload to publish NativeAOT binaries.
 - The plugin controls the Spotify **desktop application**. It does not control the web player.
 
 ## Troubleshooting
+
+### Check the environment before installing
+
+Run the complete read-only inspection:
+
+```text
+StreamDeckPortFifine.bat -Inspect
+```
+
+It reports the detected Fifine/Elgato folders, compatible resources, and relevant services/processes without changing anything.
 
 ### Spotify actions do not appear
 
