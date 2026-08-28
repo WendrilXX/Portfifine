@@ -11,12 +11,11 @@ Spotify plugin is a Windows x64 C# .NET 8 NativeAOT executable.
 
 ## What is included
 
-| Component                                                                        | Purpose                                                 |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Minimal launcher (no admin required) for the installer. |
-| [`scripts/Install-PortFifine.ps1`](./scripts/Install-PortFifine.ps1)             | Self-contained PowerShell installer/manager.            |
-| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.           |
-| [`native`](./native)                                                             | Open C# source and deterministic protocol harness.      |
+| Component                                                                        | Purpose                                                                                                       |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Self-contained installer/manager (no admin required). The PowerShell payload is embedded in this single file. |
+| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.                                                                 |
+| [`native`](./native)                                                             | Open C# source and deterministic protocol harness.                                                            |
 
 ## Quick start
 
@@ -37,7 +36,7 @@ See [Command-line options](#command-line-options) for details. The installer is 
 
 ## What the script does
 
-The launcher forwards its arguments to `scripts/Install-PortFifine.ps1`, which checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock` and ensures its `plugins` and `icons` folders are present, then:
+`StreamDeckPortFifine.bat` is a self-contained installer: it extracts its embedded PowerShell payload to a temporary script, sets `PORTFIFINE_REPOSITORY_ROOT` to the folder containing the launcher, and runs it. The embedded installer checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock` and ensures its `plugins` and `icons` folders are present, then:
 
 1. Unless `-BundledOnly`: copies compatible Elgato plugins from `%APPDATA%\Elgato\StreamDeck\Plugins` when it exists. Each `.sdPlugin` is validated; if its `manifest.json` is missing, invalid, or encrypted, that plugin is **skipped with a warning** instead of being copied.
 2. Unless `-BundledOnly`: copies Elgato icon packs from `%APPDATA%\Elgato\StreamDeck\IconPacks` when it exists.
@@ -49,7 +48,7 @@ The launcher forwards its arguments to `scripts/Install-PortFifine.ps1`, which c
 
 ## Command-line options
 
-The installer accepts the following switches (passed through the launcher):
+The installer accepts the following switches (passed on the command line to the batch file):
 
 | Flag                  | Effect                                                                                                                      |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -63,7 +62,7 @@ The installer accepts the following switches (passed through the launcher):
 | `-Services`           | Read-only list of related Windows services and running processes.                                                           |
 | `-Inspect`            | Run `-Diagnose`, `-Scan`, and `-Services` together (recommended first troubleshooting step).                                |
 
-When launched interactively (double-click), the launcher keeps the result visible until a key is pressed. The PowerShell installer also accepts `-NoPause` (no effect on install logic) so the flag can be forwarded safely through the launcher for automation.
+When launched interactively (double-click), the batch file keeps the result visible until a key is pressed. The embedded installer also accepts `-NoPause` (no effect on install logic) so the flag can be passed for automation.
 
 The diagnostic options are **read-only**: they do not install, copy, delete, clear caches, alter profiles, or restart Fifine. The launcher also forwards any other arguments to the PowerShell installer. No elevated/administrator context is required.
 
@@ -163,9 +162,7 @@ own while it remains visible.
 
 ```text
 Portfifine/
-├── StreamDeckPortFifine.bat
-├── scripts/
-│   └── Install-PortFifine.ps1     # self-contained installer
+├── StreamDeckPortFifine.bat        # self-contained installer (embedded PowerShell payload)
 ├── native/                         # C# NativeAOT source and harness
 └── plugins/
     └── com.wendril.spotify.sdPlugin/
