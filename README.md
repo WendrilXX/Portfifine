@@ -11,33 +11,55 @@ Spotify plugin is a Windows x64 C# .NET 8 NativeAOT executable.
 
 ## What is included
 
-| Component                                                                        | Purpose                                            |
-| -------------------------------------------------------------------------------- | -------------------------------------------------- |
-| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Self-elevating migration and installer script.     |
-| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.      |
-| [`native`](./native)                                                             | Open C# source and deterministic protocol harness. |
+| Component                                                                        | Purpose                                                 |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Minimal launcher (no admin required) for the installer. |
+| [`scripts/Install-PortFifine.ps1`](./scripts/Install-PortFifine.ps1)             | Self-contained PowerShell installer/manager.            |
+| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.           |
+| [`native`](./native)                                                             | Open C# source and deterministic protocol harness.      |
 
 ## Quick start
 
 1. Download or clone this repository.
 2. Make sure **Fifine Control Deck** has been installed and opened at least once.
-3. Right-click `StreamDeckPortFifine.bat` and select **Run as administrator**.
-4. Wait for the script to finish. It restarts Fifine automatically.
+3. Run `StreamDeckPortFifine.bat` (double-click is fine; **administrator is not required**).
+4. Wait for the installer to finish. It restarts Fifine automatically unless you pass `-NoRestart`.
 5. Open Fifine and look for the **Spotify** category in the action list.
 
-The script is safe to run again when this repository receives an update.
+Optional flags can be passed to the launcher, for example:
+
+```text
+StreamDeckPortFifine.bat -BundledOnly -NoRestart
+```
+
+See [Command-line options](#command-line-options) for details. The installer is safe to run again whenever this repository receives an update.
 
 ## What the script does
 
-The installer checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock`, then:
+The launcher forwards its arguments to `scripts/Install-PortFifine.ps1`, which checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock` and ensures its `plugins` and `icons` folders are present, then:
 
-1. Copies compatible Elgato plugins when `%APPDATA%\Elgato\StreamDeck\Plugins` exists.
-2. Copies compatible Elgato icon packs when `%APPDATA%\Elgato\StreamDeck\IconPacks` exists.
-3. Installs `.streamDeckIconPack` files found beside the script or on the Desktop.
-4. Installs every bundled `.sdPlugin` folder from this repository.
-5. Clears Fifine's StoreCache and restarts Fifine Control Deck.
+1. Unless `-BundledOnly`: copies compatible Elgato plugins from `%APPDATA%\Elgato\StreamDeck\Plugins` when it exists. Each `.sdPlugin` is validated; if its `manifest.json` is missing, invalid, or encrypted, that plugin is **skipped with a warning** instead of being copied.
+2. Unless `-BundledOnly`: copies Elgato icon packs from `%APPDATA%\Elgato\StreamDeck\IconPacks` when it exists.
+3. Installs `.streamDeckIconPack` files found beside the repository (and on the Desktop unless `-NoDesktopIconPacks`). Each pack is extracted to a temporary folder, verified to contain a `.sdIconPack` directory, installed into Fifine's icons, and the temporary files are always removed.
+4. Installs every bundled `.sdPlugin` folder from `plugins\` that has a valid JSON manifest, using a managed mirror so stale runtime files are removed on upgrades.
+5. Clears `StoreCache.json` and restarts Fifine Control Deck unless `-NoRestart`.
 
 > You do **not** need Elgato Stream Deck installed to use the bundled Spotify plugin. The Elgato migration steps are simply skipped when those folders do not exist.
+
+## Command-line options
+
+The installer accepts the following switches (passed through the launcher):
+
+| Flag                  | Effect                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `-BundledOnly`        | Skip Elgato plugin and icon-pack migration. Only bundled items install.                                                     |
+| `-NoRestart`          | Do not restart Fifine Control Deck after installing.                                                                        |
+| `-NoDesktopIconPacks` | Do not scan the Desktop for `.streamDeckIconPack` files.                                                                    |
+| `-NoPause`            | Do not pause at the end. Interactive runs keep the result visible until a key is pressed; use `-NoPause` for automation/CI. |
+
+When launched interactively (double-click), the launcher keeps the result visible until a key is pressed. The PowerShell installer also accepts `-NoPause` (no effect on install logic) so the flag can be forwarded safely through the launcher for automation.
+
+The launcher also forwards any other arguments to the PowerShell installer. No elevated/administrator context is required.
 
 ## Spotify plugin
 
@@ -83,7 +105,7 @@ Then fully close and reopen Fifine Control Deck. Keep
 - Windows 10 or later, 64-bit;
 - Fifine Control Deck / StreamDock `3.10.188.226` or later;
 - Spotify for Windows for the Spotify actions;
-- Administrator permission when running the migration script.
+- **No administrator permission is required** to run the installer.
 
 Developers additionally need the .NET 8 SDK and Visual Studio 2022 Build Tools
 with the C++ desktop workload to publish NativeAOT binaries.
@@ -92,16 +114,21 @@ with the C++ desktop workload to publish NativeAOT binaries.
 
 - The Spotify plugin is built specifically for the Fifine/Mirabox StreamDock plugin format.
 - Only standard, unencrypted Elgato resources can be copied directly.
-- Recent official Elgato plugins with an encrypted `manifest.json` cannot be migrated by copying their files.
+- Recent official Elgato plugins with an encrypted `manifest.json` are **detected and skipped** (with a warning) rather than copied, because copying an encrypted manifest would corrupt the install.
+- Fifine **profiles are never modified** by the installer; only plugin and icon data plus the store cache are touched.
 - The plugin controls the Spotify **desktop application**. It does not control the web player.
 
 ## Troubleshooting
 
 ### Spotify actions do not appear
 
-1. Run `StreamDeckPortFifine.bat` again as administrator.
+1. Run `StreamDeckPortFifine.bat` again (no administrator required). If Fifine was open, let the installer restart it, or run with `-NoRestart` and reopen Fifine manually.
 2. Confirm the plugin folder exists at `%APPDATA%\HotSpot\StreamDock\plugins\com.wendril.spotify.sdPlugin`.
 3. Fully close and reopen Fifine Control Deck.
+
+### A plugin was skipped during migration
+
+- Elgato plugins or icon packs with a missing, invalid, or **encrypted** `manifest.json` are skipped on purpose. Copy those resources manually if you need them, or use the official Elgato export where available.
 
 ### Spotify actions appear but do nothing
 
@@ -121,6 +148,8 @@ own while it remains visible.
 ```text
 Portfifine/
 ├── StreamDeckPortFifine.bat
+├── scripts/
+│   └── Install-PortFifine.ps1     # self-contained installer
 ├── native/                         # C# NativeAOT source and harness
 └── plugins/
     └── com.wendril.spotify.sdPlugin/
@@ -142,5 +171,6 @@ Build, publish, and test commands are documented in
 ## Updating
 
 Pull or download the latest repository version, then run
-`StreamDeckPortFifine.bat` again as administrator. The bundled plugin is
-copied over the installed version and Fifine is restarted.
+`StreamDeckPortFifine.bat` again (no administrator required). The bundled plugin
+is mirrored over the installed version (stale runtime files are removed) and
+Fifine is restarted unless you pass `-NoRestart`.
