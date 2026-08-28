@@ -1,55 +1,130 @@
 # Portfifine
 
-Tools for migrating compatible Elgato Stream Deck resources to Fifine Control
-Deck / StreamDock, while keeping custom plugins together in one repository.
+**Bring compatible Stream Deck resources to Fifine Control Deck — and keep a local Spotify controller ready to install.**
 
-Project author: **WendrilXX**.
+Portfifine is a Windows utility for Fifine Control Deck / StreamDock. It can
+migrate compatible Elgato plugins and icon packs, install the bundled Spotify
+plugin, clear the Fifine cache, and restart the application in one run.
 
-## Contents
+> **Author:** [WendrilXX](https://github.com/WendrilXX)
 
-- `StreamDeckPortFifine.bat`: copies compatible Stream Deck plugins and icon
-  packs, installs the plugins bundled in this repository, clears the cache,
-  and restarts Fifine.
-- `plugins/com.wendril.spotify.sdPlugin`: custom Spotify plugin, ready to use
-  with Fifine.
+## What is included
 
-## Usage
+| Component                                                                        | Purpose                                        |
+| -------------------------------------------------------------------------------- | ---------------------------------------------- |
+| [`StreamDeckPortFifine.bat`](./StreamDeckPortFifine.bat)                         | Self-elevating migration and installer script. |
+| [`plugins/com.wendril.spotify.sdPlugin`](./plugins/com.wendril.spotify.sdPlugin) | Self-contained Spotify controller for Fifine.  |
+
+## Quick start
 
 1. Download or clone this repository.
-2. Close Fifine Control Deck if it is open.
-3. Run `StreamDeckPortFifine.bat` as administrator.
-4. Open Fifine and find the actions in their corresponding category.
+2. Make sure **Fifine Control Deck** has been installed and opened at least once.
+3. Right-click `StreamDeckPortFifine.bat` and select **Run as administrator**.
+4. Wait for the script to finish. It restarts Fifine automatically.
+5. Open Fifine and look for the **Spotify** category in the action list.
 
-The script looks for the standard installation at
-`%APPDATA%\HotSpot\StreamDock` and, when present, copies plugins and icon
-packs from `%APPDATA%\Elgato\StreamDeck`.
+The script is safe to run again when this repository receives an update.
 
-## Spotify Plugin
+## What the script does
 
-The plugin in `plugins/com.wendril.spotify.sdPlugin` is self-contained: its
-dependencies, including the required DLL, are bundled in `plugin/node_modules`.
-Do not delete that folder.
+The installer checks that Fifine exists at `%APPDATA%\HotSpot\StreamDock`, then:
 
-Features:
+1. Copies compatible Elgato plugins when `%APPDATA%\Elgato\StreamDeck\Plugins` exists.
+2. Copies compatible Elgato icon packs when `%APPDATA%\Elgato\StreamDeck\IconPacks` exists.
+3. Installs `.streamDeckIconPack` files found beside the script or on the Desktop.
+4. Installs every bundled `.sdPlugin` folder from this repository.
+5. Clears Fifine's StoreCache and restarts Fifine Control Deck.
 
-- opens Spotify for Windows;
-- Play / Pause;
-- next and previous track;
-- Spotify application volume in 5% increments;
-- Now Playing with artist, title, and album artwork, refreshed automatically
-  while visible.
+> You do **not** need Elgato Stream Deck installed to use the bundled Spotify plugin. The Elgato migration steps are simply skipped when those folders do not exist.
 
-It controls the local Spotify for Windows application through Windows SMTC and
-Core Audio. It does not use OAuth, the Web API, or Spotify Premium. Spotify
-must be open for the actions to work.
+## Spotify plugin
 
-## Compatibility
+The bundled plugin controls the local Spotify for Windows desktop app through
+Windows SMTC and Core Audio. It is fully local: **no OAuth, Web API, Spotify
+Premium, account credentials, or API keys are required.**
 
-- Windows 10 or later, x64;
-- Fifine Control Deck / StreamDock with bundled Node.js 20;
-- Spotify for Windows.
+### Actions
 
-Recent official Elgato plugins whose `manifest.json` is encrypted are not
-compatible with Fifine and cannot be migrated by simply copying them. The
-Spotify plugin in this repository was built specifically for the
-Fifine/Mirabox plugin format.
+| Action           | What it does                            | Notes                                                               |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| **Open Spotify** | Opens the Spotify desktop app.          | Uses the Windows `spotify:` URI.                                    |
+| **Play / Pause** | Toggles playback.                       | Spotify must be running.                                            |
+| **Next**         | Skips to the next track.                | Depends on the current Spotify queue.                               |
+| **Previous**     | Returns to the previous track.          | Depends on the current Spotify queue.                               |
+| **Volume +**     | Raises Spotify's app volume by 5%.      | A track must be playing so Windows exposes Spotify's audio session. |
+| **Volume −**     | Lowers Spotify's app volume by 5%.      | A track must be playing so Windows exposes Spotify's audio session. |
+| **Now Playing**  | Shows artist, title, and album artwork. | Refreshes automatically while the key is visible.                   |
+
+The plugin runs each hardware action on key release (`keyUp`), which is the event model used by Fifine Control Deck.
+
+### Manual Spotify installation
+
+If you only want the Spotify plugin, copy this folder:
+
+```text
+plugins\com.wendril.spotify.sdPlugin
+```
+
+to:
+
+```text
+%APPDATA%\HotSpot\StreamDock\plugins\com.wendril.spotify.sdPlugin
+```
+
+Then fully close and reopen Fifine Control Deck. Keep
+`plugin/node_modules` intact: it includes the required Windows native runtime
+and `libspotifyctl.dll`.
+
+## Requirements
+
+- Windows 10 or later, 64-bit;
+- Fifine Control Deck / StreamDock `3.10.188.226` or later;
+- Spotify for Windows for the Spotify actions;
+- Administrator permission when running the migration script.
+
+## Compatibility and limitations
+
+- The Spotify plugin is built specifically for the Fifine/Mirabox StreamDock plugin format.
+- Only standard, unencrypted Elgato resources can be copied directly.
+- Recent official Elgato plugins with an encrypted `manifest.json` cannot be migrated by copying their files.
+- The plugin controls the Spotify **desktop application**. It does not control the web player.
+
+## Troubleshooting
+
+### Spotify actions do not appear
+
+1. Run `StreamDeckPortFifine.bat` again as administrator.
+2. Confirm the plugin folder exists at `%APPDATA%\HotSpot\StreamDock\plugins\com.wendril.spotify.sdPlugin`.
+3. Fully close and reopen Fifine Control Deck.
+
+### Spotify actions appear but do nothing
+
+- Use plugin version **1.1.1** or newer (shown in `manifest.json`).
+- Start Spotify for Windows before using playback controls.
+- For **Volume +** and **Volume −**, start playback first; a paused app may not have an active Core Audio session.
+- Remove and add the action again in Fifine if it was placed before an update.
+
+### Now Playing has no track details or album art
+
+Start a track in Spotify and wait up to one second. The key refreshes on its
+own while it remains visible.
+
+## Project structure
+
+```text
+Portfifine/
+├── StreamDeckPortFifine.bat
+└── plugins/
+    └── com.wendril.spotify.sdPlugin/
+        ├── manifest.json
+        ├── plugin/
+        │   ├── index.js
+        │   └── node_modules/
+        └── static/
+```
+
+## Updating
+
+Pull or download the latest repository version, then run
+`StreamDeckPortFifine.bat` again as administrator. The bundled plugin is
+copied over the installed version and Fifine is restarted.
