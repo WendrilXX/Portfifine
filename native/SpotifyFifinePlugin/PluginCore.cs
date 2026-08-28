@@ -154,7 +154,8 @@ internal sealed class PluginCore : IDisposable
             v = 0.5;
 
         v = up ? Math.Min(1.0, v + 0.05) : Math.Max(0.0, v - 0.05);
-        _controller.SetAppVolume(v);
+        if (!_controller.TrySetAppVolume(v))
+            _transport.SendShowAlert(context);
     }
 
     private void HandleNowPlaying(string? ev, string context)

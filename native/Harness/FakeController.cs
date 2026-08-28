@@ -18,6 +18,7 @@ internal sealed class FakeController : ISpotifyController
     public bool Nexted { get; set; }
     public bool Previoused { get; set; }
     public double Volume { get; set; } = 0.5;
+    public bool VolumeSetSucceeds { get; set; } = true;
     public bool Muted { get; set; }
     public string? OpenedUri { get; set; }
 
@@ -51,7 +52,14 @@ internal sealed class FakeController : ISpotifyController
 
     public double GetAppVolume() => Volume;
 
-    public void SetAppVolume(double value) => Volume = value;
+    public bool TrySetAppVolume(double value)
+    {
+        if (!VolumeSetSucceeds)
+            return false;
+
+        Volume = value;
+        return true;
+    }
 
     public bool IsAppMuted() => Muted;
 

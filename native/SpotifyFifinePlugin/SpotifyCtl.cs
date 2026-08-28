@@ -311,10 +311,10 @@ internal sealed class SpotifyController : ISpotifyController, IDisposable
         return Lib.spotifyctl_get_app_volume(_handle);
     }
 
-    public void SetAppVolume(double value)
+    public bool TrySetAppVolume(double value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        Lib.spotifyctl_set_app_volume(_handle, (float)value);
+        return Lib.spotifyctl_set_app_volume(_handle, (float)value) != 0;
     }
 
     public bool IsAppMuted()

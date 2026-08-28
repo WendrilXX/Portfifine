@@ -32,6 +32,7 @@ internal static class BehaviorScenarios
         ok &= Run("physical dispatch is keyUp only (keyDown ignored)", ScenarioKeyUpOnly);
         ok &= Run("next/previous/volup/voldown when not running => showAlert", ScenarioTransportAlerts);
         ok &= Run("next keyUp when running => Next() no alert", ScenarioNextRunning);
+        ok &= Run("volume keyUp adjusts Spotify volume or shows alert on session failure", ScenarioVolumeResult);
         return ok;
     }
 
@@ -204,6 +205,31 @@ internal static class BehaviorScenarios
         if (TryFind(t.Out, "showAlert", out _))
             return false;
         return Count(t.Out, "showAlert") == 0;
+    }
+
+    private static bool ScenarioVolumeResult()
+    {
+        var successTransport = new FakeTransport();
+        var successController = new FakeController { Volume = 0.5, VolumeSetSucceeds = true };
+        using (var core = new PluginCore(successTransport, successController, enableAutoPoll: false))
+        {
+            core.HandleHostMessage(Msg(AVolUp, "keyUp", "ctx-volume-success"));
+        }
+
+        if (Math.Abs(successController.Volume - 0.55) > 0.0001 ||
+            TryFind(successTransport.Out, "showAlert", out _))
+            return false;
+
+        var failedTransport = new FakeTransport();
+        var failedController = new FakeController { Volume = 0.5, VolumeSetSucceeds = false };
+        using (var core = new PluginCore(failedTransport, failedController, enableAutoPoll: false))
+        {
+            core.HandleHostMessage(Msg(AVolDown, "keyUp", "ctx-volume-failed"));
+        }
+
+        return Math.Abs(failedController.Volume - 0.5) < 0.0001 &&
+            TryFind(failedTransport.Out, "showAlert", out var alert) &&
+            alert.GetProperty("context").GetString() == "ctx-volume-failed";
     }
 
     // --- helpers ----------------------------------------------------------

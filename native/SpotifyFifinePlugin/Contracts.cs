@@ -59,7 +59,7 @@ internal interface ISpotifyController
     bool Previous();
 
     double GetAppVolume();
-    void SetAppVolume(double value);
+    bool TrySetAppVolume(double value);
 
     bool IsAppMuted();
     void SetAppMuted(bool muted);
