@@ -114,6 +114,12 @@ function guardRunning(c) {
 }
 
 // ---- Actions ----
+actions.open = {
+  keyDown() {
+    plugin.openUrl("spotify:");
+  },
+};
+
 actions.playpause = {
   _willAppear(data) {
     const ctx = data.context;

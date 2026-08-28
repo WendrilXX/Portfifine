@@ -1,9 +1,9 @@
 {
   "SDKVersion": 1,
   "Name": "Spotify",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Author": "WendrilXX",
-  "Description": "Controle offline do Spotify via Windows SMTC (sem Premium/OAuth). Play/Pause, Next, Previous, Volume e Now Playing com capa do álbum.",
+  "Description": "Controle offline do Spotify via Windows SMTC (sem Premium/OAuth). Abrir Spotify, Play/Pause, Next, Previous, Volume e Now Playing com capa do álbum.",
   "Icon": "static/spotify",
   "Category": "Spotify",
   "CategoryIcon": "static/spotify",
@@ -24,6 +24,18 @@
     }
   ],
   "Actions": [
+    {
+      "UUID": "com.wendril.spotify.open",
+      "Name": "Abrir Spotify",
+      "Icon": "static/spotify",
+      "States": [
+        {
+          "Image": "static/spotify"
+        }
+      ],
+      "Controllers": ["Keypad"],
+      "Tooltip": "Abre o Spotify para Windows"
+    },
     {
       "UUID": "com.wendril.spotify.playpause",
       "Name": "Play / Pause",

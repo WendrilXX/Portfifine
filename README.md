@@ -32,6 +32,7 @@ Do not delete that folder.
 
 Features:
 
+- opens Spotify for Windows;
 - Play / Pause;
 - next and previous track;
 - Spotify application volume in 5% increments;
