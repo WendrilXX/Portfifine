@@ -50,6 +50,12 @@ internal interface ISpotifyController
 {
     bool IsRunning { get; }
 
+    /// <summary>
+    /// Recreates the native window/session monitor when Spotify was not found at
+    /// plugin startup. Returns true only when Spotify is detected afterwards.
+    /// </summary>
+    bool TryRecover();
+
     /// <summary>Latest known state, or <c>null</c> if unavailable.</summary>
     PlaybackState? LatestState();
 

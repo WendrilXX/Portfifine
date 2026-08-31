@@ -267,6 +267,29 @@ internal sealed class SpotifyController : ISpotifyController, IDisposable
         }
     }
 
+    public bool TryRecover()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (Lib.spotifyctl_is_running(_handle) != 0)
+            return true;
+
+        try
+        {
+            // libspotifyctl finds an already-open Spotify window during Start().
+            // Rebuilding the monitor covers a missed window-create event during
+            // Windows startup, without restarting the Fifine host/plugin.
+            Lib.spotifyctl_stop(_handle);
+            Lib.spotifyctl_start(_handle);
+            _started = true;
+            return Lib.spotifyctl_is_running(_handle) != 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public PlaybackState? LatestState()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

@@ -11,6 +11,8 @@ namespace FifineProtoHarness;
 internal sealed class FakeController : ISpotifyController
 {
     public bool Running { get; set; } = true;
+    public bool RecoverySucceeds { get; set; }
+    public int RecoveryAttempts { get; private set; }
     public PlaybackState? State { get; set; }
 
     public bool Played { get; set; }
@@ -23,6 +25,14 @@ internal sealed class FakeController : ISpotifyController
     public string? OpenedUri { get; set; }
 
     public bool IsRunning => Running;
+
+    public bool TryRecover()
+    {
+        RecoveryAttempts++;
+        if (RecoverySucceeds)
+            Running = true;
+        return Running;
+    }
 
     public PlaybackState? LatestState() => State;
 

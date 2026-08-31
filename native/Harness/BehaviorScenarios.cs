@@ -29,6 +29,7 @@ internal static class BehaviorScenarios
         ok &= Run("nowplaying dedup (same state silent, changed state emits)", ScenarioNowPlayingDedup);
         ok &= Run("playpause willAppear+keyUp => setState 1 then 0 (optimistic)", ScenarioPlayPause);
         ok &= Run("playpause keyUp when not running => showAlert", ScenarioAlertRunning);
+        ok &= Run("startup recovery retries Spotify monitor without restarting Fifine", ScenarioStartupRecovery);
         ok &= Run("physical dispatch is keyUp only (keyDown ignored)", ScenarioKeyUpOnly);
         ok &= Run("next/previous/volup/voldown when not running => showAlert", ScenarioTransportAlerts);
         ok &= Run("next keyUp when running => Next() no alert", ScenarioNextRunning);
@@ -159,6 +160,27 @@ internal static class BehaviorScenarios
         if (c.Paused || c.Played)
             return false;
         return Count(t.Out, "setState") == 0;
+    }
+
+    private static bool ScenarioStartupRecovery()
+    {
+        var c = new FakeController
+        {
+            Running = false,
+            RecoverySucceeds = true,
+            State = FakeController.Make(SpotifyStatus.Paused),
+        };
+        var t = new FakeTransport();
+        using var core = new PluginCore(t, c, enableAutoPoll: false);
+
+        // The periodic production timer calls the same recovery path. Calling
+        // it directly keeps this deterministic without waiting two seconds.
+        core.RecoverSpotify();
+        if (!c.Running || c.RecoveryAttempts != 1)
+            return false;
+
+        core.HandleHostMessage(Msg(ANext, "keyUp", "ctx-recovered"));
+        return c.Nexted && !TryFind(t.Out, "showAlert", out _);
     }
 
     private static bool ScenarioKeyUpOnly()
