@@ -13,8 +13,6 @@ namespace SpotifyFifinePlugin;
 /// </summary>
 internal sealed class PluginCore : IDisposable
 {
-    private const int RecoveryIntervalMs = 2000;
-
     private readonly IHostTransport _transport;
     private readonly ISpotifyController _controller;
     private readonly bool _enableAutoPoll;
@@ -24,7 +22,6 @@ internal sealed class PluginCore : IDisposable
     private readonly HashSet<string> _nowplayingContexts = new();
     private readonly Dictionary<string, string> _nowplayingVisuals = new();
     private Timer? _nowplayingTimer;
-    private Timer? _spotifyRecoveryTimer;
     private bool _disposed;
 
     public PluginCore(IHostTransport transport, ISpotifyController controller, bool enableAutoPoll = true)
@@ -32,17 +29,6 @@ internal sealed class PluginCore : IDisposable
         _transport = transport;
         _controller = controller;
         _enableAutoPoll = enableAutoPoll;
-
-        if (_enableAutoPoll)
-        {
-            // Spotify may start after Windows/Fifine. Retry the native monitor
-            // periodically so controls recover without a Fifine restart.
-            _spotifyRecoveryTimer = new Timer(
-                _ => RecoverSpotify(),
-                null,
-                RecoveryIntervalMs,
-                RecoveryIntervalMs);
-        }
     }
 
     // -----------------------------------------------------------------------
@@ -227,19 +213,10 @@ internal sealed class PluginCore : IDisposable
         }
     }
 
-    internal void RecoverSpotify()
-    {
-        lock (_gate)
-        {
-            if (_disposed || _controller.IsRunning)
-                return;
-
-            _controller.TryRecover();
-        }
-    }
-
     private bool EnsureSpotifyAvailable(string context)
     {
+        // Recover only when the user invokes a Spotify action. This avoids
+        // background monitor resets while unrelated Fifine plugins are active.
         if (_controller.IsRunning || _controller.TryRecover())
             return true;
 
@@ -328,8 +305,6 @@ internal sealed class PluginCore : IDisposable
 
             _disposed = true;
             StopNowPlayingRefresh();
-            _spotifyRecoveryTimer?.Dispose();
-            _spotifyRecoveryTimer = null;
             _playpauseContexts.Clear();
             _nowplayingContexts.Clear();
             _nowplayingVisuals.Clear();
